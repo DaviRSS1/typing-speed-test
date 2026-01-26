@@ -7,6 +7,13 @@ It is not intended to be a production-ready application.
 
 ---
 
+🌐 Live Demo
+
+👉 Access the application:
+https://typing-speed-test-jet.vercel.app/
+
+---
+
 ## 🎯 Purpose
 
 The main goal of this project was to:
