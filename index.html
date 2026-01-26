@@ -3,57 +3,121 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- displays site properly based on user's device -->
-
     <link
       rel="icon"
       type="image/png"
       sizes="32x32"
       href="./assets/images/favicon-32x32.png"
     />
-
     <title>Typing Speed Test</title>
     <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
   </head>
   <body>
     <main class="page">
       <header class="top">
-        <img src="assets/images/logo-large.svg" alt="Typing Speed Test Logo" />
+        <img
+          src="assets/images/logo-large.svg"
+          alt="Typing Speed Test Logo"
+          class="logo-desktop"
+        />
+        <img
+          src="assets/images/logo-small.svg"
+          alt="Typing Speed Test Logo"
+          class="logo-mobile"
+        />
         <div>
           <img src="assets/images/icon-personal-best.svg" alt="Personal Best" />
-          <p>Personal best: <span id="bestWpm">0</span> WPM</p>
+          <p class="best-desktop">
+            Personal best: <span class="bestWpm">0</span> WPM
+          </p>
+          <p class="best-mobile">Best: <span class="bestWpm">0</span> WPM</p>
         </div>
       </header>
       <section class="game-screen">
         <section class="menu">
           <div class="stats">
-            <p class="wpm">WPM: <span id="wpm"></span></p>
-            <p class="acc">Accuracy: <span id="acc">%</span></p>
-            <p class="time">Time: <span id="time"></span></p>
-          </div>
-          <div class="options">
-            <div>
-              <p>Difficulty:</p>
-              <label>
-                <input type="radio" name="difficulty" value="easy" checked />
-                Easy </label
-              ><label>
-                <input type="radio" name="difficulty" value="medium" />
-                Medium </label
-              ><label>
-                <input type="radio" name="difficulty" value="hard" />
-                Hard
-              </label>
+            <div class="stat">
+              <span class="label">WPM:</span>
+              <span class="value" id="wpm">0</span>
             </div>
-            <div>
-              <p>Mode:</p>
-              <label>
-                <input type="radio" name="mode" value="timed" checked />
-                Timed (60s) </label
-              ><label>
-                <input type="radio" name="mode" value="passage" />
-                Passage
-              </label>
+            <div class="stat">
+              <span class="label">Accuracy:</span>
+              <span class="value" id="acc">100%</span>
+            </div>
+            <div class="stat">
+              <span class="label">Time:</span>
+              <span class="value" id="time">60s</span>
+            </div>
+          </div>
+
+          <div class="options">
+            <div class="desktop-options">
+              <div>
+                <p>Difficulty:</p>
+                <label>
+                  <input type="radio" name="difficulty" value="easy" checked />
+                  Easy </label
+                ><label>
+                  <input type="radio" name="difficulty" value="medium" />
+                  Medium </label
+                ><label>
+                  <input type="radio" name="difficulty" value="hard" />
+                  Hard
+                </label>
+              </div>
+              <div>
+                <p>Mode:</p>
+                <label>
+                  <input type="radio" name="mode" value="timed" checked />
+                  Timed (60s) </label
+                ><label>
+                  <input type="radio" name="mode" value="passage" />
+                  Passage
+                </label>
+              </div>
+            </div>
+            <div class="mobile-options">
+              <div class="dropdown" data-type="difficulty">
+                <button class="dropdown-btn">
+                  Easy
+                  <span class="arrow"
+                    ><img src="assets/images/icon-down-arrow.svg"
+                  /></span>
+                </button>
+                <div class="dropdown-menu">
+                  <label
+                    ><input type="radio" name="difficulty" value="easy" />
+                    Easy</label
+                  >
+                  <label
+                    ><input type="radio" name="difficulty" value="medium" />
+                    Medium</label
+                  >
+                  <label
+                    ><input type="radio" name="difficulty" value="hard" />
+                    Hard</label
+                  >
+                </div>
+              </div>
+
+              <div class="dropdown" data-type="mode">
+                <button class="dropdown-btn">
+                  Timed (60s)
+                  <span class="arrow"
+                    ><img src="assets/images/icon-down-arrow.svg"
+                  /></span>
+                </button>
+                <div class="dropdown-menu">
+                  <label
+                    ><input type="radio" name="mode" value="timed" /> Timed
+                    (60s)</label
+                  >
+                  <label
+                    ><input type="radio" name="mode" value="passage" />
+                    Passage</label
+                  >
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -120,332 +184,299 @@
 </html>
 
 <script>
+  const DOM = {
+    text: document.getElementById("text"),
+    wpm: document.getElementById("wpm"),
+    acc: document.getElementById("acc"),
+    time: document.getElementById("time"),
+    startBtn: document.getElementById("start"),
+    restartBtn: document.getElementById("restart"),
+    textArea: document.querySelector(".text-area"),
+    resetDiv: document.querySelector(".reset"),
+    gameScreen: document.querySelector(".game-screen"),
+    finishScreen: document.querySelector(".finished-page"),
+    bestWpmEls: document.querySelectorAll(".bestWpm"),
+    resultTitle: document.getElementById("result-title"),
+    resultSubtitle: document.getElementById("result-subtitle"),
+    resultActionText: document.getElementById("result-action-text"),
+    resultActionBtn: document.getElementById("result-action"),
+    dropdowns: document.querySelectorAll(".dropdown-btn"),
+    dropdownInputs: document.querySelectorAll(".dropdown-menu input"),
+  };
+
   const RESULT_TYPE = {
     BASELINE: "baseline",
     NORMAL: "normal",
     HIGHSCORE: "highscore",
   };
+  const INITIAL_TIME = 60;
 
-  const bestWpmEl = document.getElementById("bestWpm");
+  let gameState = {
+    dataJSON: null,
+    chars: [],
+    currentIndex: 0,
+    correct: 0,
+    totalTyped: 0,
+    time: INITIAL_TIME,
+    elapsedTime: 0,
+    timer: null,
+    started: false,
+    mode: "timed",
+    bestWpm: Number(localStorage.getItem("bestWpm")) || 0,
+  };
 
-  let bestWpm = localStorage.getItem("bestWpm") || 0;
-  bestWpmEl.textContent = bestWpm;
-
-  const textElement = document.getElementById("text");
-  const wpmEl = document.getElementById("wpm");
-  const accEl = document.getElementById("acc");
-  const timeEl = document.getElementById("time");
-  const startBtn = document.getElementById("start");
-  const textArea = document.querySelector(".text-area");
-  const restartBtn = document.getElementById("restart");
-  const resetDiv = document.querySelector(".reset");
-
-  let dataJSON;
-
-  let chars = [];
-  let currentIndex = 0;
-  let correct = 0;
-  let totalTyped = 0;
-  let time = 60;
-  let timer;
-  let started = false;
-  let mode = "timed";
-  let elapsedTime = 0;
+  DOM.bestWpmEls.forEach((el) => (el.textContent = gameState.bestWpm));
 
   fetch("data.json")
     .then((res) => res.json())
     .then((data) => {
-      dataJSON = data;
-
+      gameState.dataJSON = data;
       loadText("hard", 1);
     })
-    .catch((err) => console.error(err));
+    .catch(console.error);
 
-  startBtn.addEventListener("click", () => {
-    resetTimerUI();
-    textArea.classList.remove("locked");
-    startBtn.style.display = "none";
-    resetDiv.style.display = "block";
-
-    const difficulty = getSelectedDifficulty();
-    const randomId = getRandomId();
-    mode = getSelectedMode();
-
-    loadText(difficulty, randomId);
-
-    started = true;
-
-    if (mode === "timed") {
-      time = 60;
-      startTimer(); // countdown
-    } else {
-      elapsedTime = 0;
-      startCountUpTimer(); // count up
-    }
-  });
-
-  restartBtn.addEventListener("click", () => {
-    resetTimerUI();
-    clearInterval(timer);
-    resetStats();
-    restartBtn.blur();
-
-    const difficulty = getSelectedDifficulty();
-    const randomId = getRandomId();
-    mode = getSelectedMode();
-
-    loadText(difficulty, randomId);
-
-    started = true;
-
-    if (mode === "timed") {
-      time = 60;
-      startTimer();
-    } else {
-      elapsedTime = 0;
-      startCountUpTimer();
-    }
-  });
+  function getOption(name) {
+    return document.querySelector(`input[name="${name}"]:checked`).value;
+  }
 
   function getRandomId() {
     return Math.floor(Math.random() * 10) + 1;
   }
 
-  function getSelectedDifficulty() {
-    return document.querySelector('input[name="difficulty"]:checked').value;
-  }
-
-  function getSelectedMode() {
-    return document.querySelector('input[name="mode"]:checked').value;
-  }
-
   function loadText(difficulty, id) {
-    const item = dataJSON[difficulty].find(
+    const item = gameState.dataJSON[difficulty].find(
       (t) => t.id === `${difficulty}-${id}`,
     );
-
-    textElement.innerHTML = item.text
+    DOM.text.innerHTML = item.text
       .split("")
       .map((char) => `<span>${char}</span>`)
       .join("");
-
-    chars = textElement.querySelectorAll("span");
-    currentIndex = 0;
-
-    if (chars.length > 0) {
-      chars[0].classList.add("current");
-    }
+    gameState.chars = DOM.text.querySelectorAll("span");
+    gameState.currentIndex = 0;
+    if (gameState.chars.length > 0) gameState.chars[0].classList.add("current");
   }
 
-  function startTimer() {
-    timeEl.textContent = time;
+  function startGame(isRestart = false) {
+    resetTimerUI();
+    closeAllDropdowns();
 
-    timer = setInterval(() => {
-      time--;
-      timeEl.textContent = time;
-
-      if (time <= 40) timeEl.style.color = "hsl(49, 85%, 70%)";
-      if (time <= 20) timeEl.style.color = "hsl(354, 63%, 57%)";
-
-      if (time <= 0) {
-        clearInterval(timer);
-        document.removeEventListener("keydown", handleTyping);
-      }
-    }, 1000);
-
-    if (time <= 0 && mode === "timed") {
-      clearInterval(timer);
-      finishTest();
+    if (isRestart) {
+      clearInterval(gameState.timer);
+      DOM.restartBtn.blur();
+      resetStats();
+    } else {
+      DOM.textArea.classList.remove("locked");
+      DOM.startBtn.style.display = "none";
+      DOM.resetDiv.style.display = "block";
     }
+
+    const difficulty = getOption("difficulty");
+    gameState.mode = getOption("mode");
+    loadText(difficulty, getRandomId());
+
+    gameState.started = true;
+    manageTimer();
   }
 
-  function startCountUpTimer() {
-    timeEl.textContent = "0";
+  function manageTimer() {
+    if (gameState.mode === "timed") {
+      gameState.time = INITIAL_TIME;
+      DOM.time.textContent = gameState.time;
 
-    timer = setInterval(() => {
-      elapsedTime++;
-      timeEl.textContent = elapsedTime;
-    }, 1000);
+      gameState.timer = setInterval(() => {
+        gameState.time--;
+        DOM.time.textContent = gameState.time;
+
+        if (gameState.time <= 40) DOM.time.style.color = "hsl(49, 85%, 70%)";
+        if (gameState.time <= 20) DOM.time.style.color = "hsl(354, 63%, 57%)";
+
+        if (gameState.time <= 0) {
+          finishTest();
+        }
+      }, 1000);
+    } else {
+      gameState.elapsedTime = 0;
+      DOM.time.textContent = "0";
+
+      gameState.timer = setInterval(() => {
+        gameState.elapsedTime++;
+        DOM.time.textContent = gameState.elapsedTime;
+      }, 1000);
+    }
   }
 
   function handleTyping(e) {
-    if (!started) return;
+    if (!gameState.started) return;
 
-    const expected = chars[currentIndex].textContent;
     const typed = e.key;
-
     if (typed.length > 1) return;
 
-    totalTyped++;
+    const expected = gameState.chars[gameState.currentIndex].textContent;
+    gameState.totalTyped++;
 
+    const charEl = gameState.chars[gameState.currentIndex];
     if (typed === expected) {
-      chars[currentIndex].classList.add("correct");
-      correct++;
+      charEl.classList.add("correct");
+      gameState.correct++;
     } else {
-      chars[currentIndex].classList.add("incorrect");
+      charEl.classList.add("incorrect");
     }
 
-    chars[currentIndex].classList.remove("current");
-    currentIndex++;
+    charEl.classList.remove("current");
+    gameState.currentIndex++;
 
-    if (chars[currentIndex]) {
-      chars[currentIndex].classList.add("current");
-    }
-
-    updateStats();
-
-    if (currentIndex >= chars.length) {
+    if (gameState.chars[gameState.currentIndex]) {
+      gameState.chars[gameState.currentIndex].classList.add("current");
+    } else {
       finishTest();
     }
+
+    updateStatsDisplay();
+  }
+
+  function updateStatsDisplay() {
+    const accuracy =
+      gameState.totalTyped > 0
+        ? (gameState.correct / gameState.totalTyped) * 100
+        : 100;
+    DOM.acc.textContent = accuracy.toFixed(1) + "%";
+
+    let minutes =
+      gameState.mode === "timed"
+        ? (INITIAL_TIME - gameState.time) / 60
+        : gameState.elapsedTime / 60;
+
+    const wpm = minutes > 0 ? gameState.correct / 5 / minutes : 0;
+    DOM.wpm.textContent = Math.floor(wpm);
   }
 
   function finishTest() {
-    clearInterval(timer);
-    started = false;
+    clearInterval(gameState.timer);
+    gameState.started = false;
+    document.removeEventListener("keydown", handleTyping);
 
-    const previousBest = Number(bestWpm);
-    const currentWpm = Number(wpmEl.textContent);
-
+    const currentWpm = Number(DOM.wpm.textContent);
     const accuracy =
-      totalTyped > 0 ? ((correct / totalTyped) * 100).toFixed(1) : "100.0";
+      gameState.totalTyped > 0
+        ? ((gameState.correct / gameState.totalTyped) * 100).toFixed(1)
+        : "100.0";
 
-    const incorrect = totalTyped - correct;
-
-    // ===== RESULT STATS =====
     document.getElementById("wpm-complete").textContent = currentWpm;
 
-    const accCompleteEl = document.getElementById("acc-complete");
-    accCompleteEl.textContent = accuracy + "%";
-    accCompleteEl.className = "";
+    const accEl = document.getElementById("acc-complete");
+    accEl.textContent = accuracy + "%";
+    accEl.className = "";
+    accEl.classList.add(
+      accuracy >= 90 ? "acc-good" : accuracy >= 70 ? "acc-mid" : "acc-bad",
+    );
 
-    if (accuracy >= 90) accCompleteEl.classList.add("acc-good");
-    else if (accuracy >= 70) accCompleteEl.classList.add("acc-mid");
-    else accCompleteEl.classList.add("acc-bad");
-
-    const correctEl = document.getElementById("chars-correct");
-    const wrongEl = document.getElementById("chars-wrong");
-
-    correctEl.textContent = correct;
-    wrongEl.textContent = incorrect;
-
-    correctEl.className = "chars-correct";
-    wrongEl.className = "chars-wrong";
+    document.getElementById("chars-correct").textContent = gameState.correct;
+    document.getElementById("chars-wrong").textContent =
+      gameState.totalTyped - gameState.correct;
 
     let resultType = RESULT_TYPE.NORMAL;
-
     if (!localStorage.getItem("hasBaseline")) {
       resultType = RESULT_TYPE.BASELINE;
       localStorage.setItem("hasBaseline", "true");
-    } else if (currentWpm > previousBest) {
+    } else if (currentWpm > gameState.bestWpm) {
       resultType = RESULT_TYPE.HIGHSCORE;
+      gameState.bestWpm = currentWpm;
+      localStorage.setItem("bestWpm", gameState.bestWpm);
+      DOM.bestWpmEls.forEach((el) => (el.textContent = gameState.bestWpm));
     }
 
-    if (currentWpm > previousBest) {
-      bestWpm = currentWpm;
-      localStorage.setItem("bestWpm", bestWpm);
-      bestWpmEl.textContent = bestWpm;
-    }
-
-    renderResult(resultType);
-    showResultScreen();
+    renderResultScreen(resultType);
   }
 
-  function showResultScreen() {
-    document.querySelector(".game-screen").style.display = "none";
-    document.querySelector(".finished-page").style.display = "flex";
-  }
+  function renderResultScreen(type) {
+    const config = {
+      [RESULT_TYPE.BASELINE]: {
+        title: "Baseline Established!",
+        sub: "You've set the bar. Now the real challenge begins - time to beat it.",
+        action: "Beat This Score",
+      },
+      [RESULT_TYPE.NORMAL]: {
+        title: "Test Complete!",
+        sub: "Solid run. Keep pushing to beat your high score.",
+        action: "Go Again",
+      },
+      [RESULT_TYPE.HIGHSCORE]: {
+        title: "High Score Smashed!",
+        sub: "You're getting faster. That was incredible typing.",
+        action: "Beat This Score",
+      },
+    };
 
-  function updateStats() {
-    const accuracy = totalTyped > 0 ? (correct / totalTyped) * 100 : 100;
-    accEl.textContent = accuracy.toFixed(1) + "%";
-
-    let minutes;
-
-    if (mode === "timed") {
-      minutes = (60 - time) / 60;
-    } else {
-      minutes = elapsedTime / 60;
-    }
-
-    const wpm = minutes > 0 ? correct / 5 / minutes : 0;
-    wpmEl.textContent = Math.floor(wpm);
-  }
-
-  function resetTimerUI() {
-    timeEl.style.color = "#fff";
-  }
-
-  function resetStats() {
-    correct = 0;
-    totalTyped = 0;
-    time = 60;
-
-    wpmEl.textContent = "0";
-    accEl.textContent = "100%";
-    timeEl.textContent = time;
-    resetTimerUI();
-  }
-
-  document.addEventListener("keydown", handleTyping);
-
-  function renderResult(type) {
-    const titleEl = document.getElementById("result-title");
-    const subtitleEl = document.getElementById("result-subtitle");
-    const actionTextEl = document.getElementById("result-action-text");
+    DOM.resultTitle.textContent = config[type].title;
+    DOM.resultSubtitle.textContent = config[type].sub;
+    DOM.resultActionText.textContent = config[type].action;
 
     const stars = document.querySelectorAll(".bg-star");
     const confetti = document.querySelector(".confetti");
 
-    // reset visual
-    stars.forEach((s) => (s.style.display = "none"));
-    if (confetti) confetti.style.display = "none";
+    stars.forEach(
+      (s) =>
+        (s.style.display = type !== RESULT_TYPE.HIGHSCORE ? "block" : "none"),
+    );
+    if (confetti)
+      confetti.style.display =
+        type === RESULT_TYPE.HIGHSCORE ? "block" : "none";
 
-    if (type === "baseline") {
-      titleEl.textContent = "Baseline Established!";
-      subtitleEl.textContent =
-        "You've set the bar. Now the real challenge begins - time to beat it.";
-      actionTextEl.textContent = "Beat This Score";
-
-      stars.forEach((s) => (s.style.display = "block"));
-    }
-
-    if (type === "normal") {
-      titleEl.textContent = "Test Complete!";
-      subtitleEl.textContent =
-        "Solid run. Keep pushing to beat your high score.";
-      actionTextEl.textContent = "Go Again";
-
-      stars.forEach((s) => (s.style.display = "block"));
-    }
-
-    if (type === "highscore") {
-      titleEl.textContent = "High Score Smashed!";
-      subtitleEl.textContent =
-        "You're getting faster. That was incredible typing.";
-      actionTextEl.textContent = "Beat This Score";
-
-      if (confetti) confetti.style.display = "block";
-    }
+    DOM.gameScreen.style.display = "none";
+    DOM.finishScreen.style.display = "flex";
   }
 
-  const resultActionBtn = document.getElementById("result-action");
+  function resetStats() {
+    gameState.correct = 0;
+    gameState.totalTyped = 0;
+    gameState.time = INITIAL_TIME;
+    gameState.elapsedTime = 0;
+    DOM.wpm.textContent = "0";
+    DOM.acc.textContent = "100%";
+    DOM.time.textContent = INITIAL_TIME;
+    document.addEventListener("keydown", handleTyping);
+  }
 
-  resultActionBtn.addEventListener("click", () => {
-    document.querySelector(".finished-page").style.display = "none";
-    document.querySelector(".game-screen").style.display = "block";
+  function resetTimerUI() {
+    DOM.time.style.color = "#fff";
+  }
 
+  function closeAllDropdowns() {
+    document
+      .querySelectorAll(".dropdown-menu.open")
+      .forEach((menu) => menu.classList.remove("open"));
+  }
+
+  DOM.startBtn.addEventListener("click", () => startGame(false));
+  DOM.restartBtn.addEventListener("click", () => startGame(true));
+
+  DOM.resultActionBtn.addEventListener("click", () => {
+    DOM.finishScreen.style.display = "none";
+    DOM.gameScreen.style.display = "block";
     resetStats();
+    resetTimerUI();
 
-    const difficulty = getSelectedDifficulty();
-    const randomId = getRandomId();
-    mode = getSelectedMode();
+    gameState.mode = getOption("mode");
+    loadText(getOption("difficulty"), getRandomId());
 
-    loadText(difficulty, randomId);
+    DOM.textArea.classList.add("locked");
+    DOM.startBtn.style.display = "block";
+    DOM.resetDiv.style.display = "none";
+    DOM.startBtn.focus();
+  });
 
-    textArea.classList.add("locked");
-    startBtn.style.display = "block";
-    resetDiv.style.display = "none";
+  document.addEventListener("keydown", handleTyping);
 
-    startBtn.focus();
+  DOM.dropdowns.forEach((btn) => {
+    btn.addEventListener("click", () =>
+      btn.nextElementSibling.classList.toggle("open"),
+    );
+  });
+
+  DOM.dropdownInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      const btn = input.closest(".dropdown").querySelector(".dropdown-btn");
+      btn.childNodes[0].textContent = input.parentElement.textContent.trim();
+    });
   });
 </script>
