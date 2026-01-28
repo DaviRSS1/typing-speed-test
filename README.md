@@ -64,8 +64,9 @@ No frameworks, no build tools — just the basics.
 
 ## 👤 Author
 
-Coded by **Davi Reghim**  
-[GitHub Profile](https://github.com/DaviRSS1)
+Developed by **Davi**  
+🔗 LinkedIn: https://www.linkedin.com/in/davi-reghim-13b995272/
+💻 GitHub: https://github.com/DaviRSS1
 
 ---
 
